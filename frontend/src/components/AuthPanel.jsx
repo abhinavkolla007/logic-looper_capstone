@@ -1,8 +1,7 @@
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion as Motion, AnimatePresence } from "framer-motion";
 import { GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
 import { auth } from "../firebase";
-import { signInWithTruecaller, signInAsGuest } from "../utils/auth";
 
 export default function AuthPanel({ user, onChange }) {
   const [isLoading, setIsLoading] = useState(false);
@@ -46,7 +45,7 @@ export default function AuthPanel({ user, onChange }) {
     try {
       // Simulate OTP send - in production, this would call backend
       setTruecallerForm(prev => ({ ...prev, otpSent: true }));
-    } catch (err) {
+    } catch {
       setError("Failed to send OTP");
     } finally {
       setIsLoading(false);
@@ -81,7 +80,7 @@ export default function AuthPanel({ user, onChange }) {
       onChange(formattedUser);
       setShowAuthOptions(false);
       setTruecallerForm({ phone: "", otp: "", otpSent: false });
-    } catch (err) {
+    } catch {
       setError("Verification failed");
     } finally {
       setIsLoading(false);
@@ -109,14 +108,14 @@ export default function AuthPanel({ user, onChange }) {
       localStorage.removeItem("logicUser");
       onChange(null);
       setError("");
-    } catch (err) {
+    } catch {
       setError("Logout failed");
     }
   };
 
   if (user) {
     return (
-      <motion.div
+      <Motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         className="flex items-center justify-between rounded-xl border border-emerald-500/20 bg-emerald-900/10 p-4 backdrop-blur"
@@ -133,34 +132,34 @@ export default function AuthPanel({ user, onChange }) {
             {user.provider}
           </span>
         </div>
-        <motion.button
+        <Motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={handleLogout}
           className="rounded-lg bg-red-500/80 px-3 py-1 text-sm font-medium transition hover:bg-red-600"
         >
           Logout
-        </motion.button>
-      </motion.div>
+        </Motion.button>
+      </Motion.div>
     );
   }
 
   return (
     <div className="relative">
       {error && (
-        <motion.div
+        <Motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
           className="mb-3 rounded-lg border border-red-500/50 bg-red-500/10 px-4 py-2 text-sm text-red-200"
         >
           {error}
-        </motion.div>
+        </Motion.div>
       )}
 
       <AnimatePresence>
         {showAuthOptions && (
-          <motion.div
+          <Motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
@@ -251,19 +250,19 @@ export default function AuthPanel({ user, onChange }) {
             >
               Cancel
             </button>
-          </motion.div>
+          </Motion.div>
         )}
       </AnimatePresence>
 
       {!showAuthOptions && (
-        <motion.button
+        <Motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={() => setShowAuthOptions(true)}
           className="w-full rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 px-4 py-2.5 font-medium text-white transition hover:from-blue-700 hover:to-purple-700"
         >
           Login to Play
-        </motion.button>
+        </Motion.button>
       )}
     </div>
   );

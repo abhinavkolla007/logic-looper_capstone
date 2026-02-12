@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { motion } from "framer-motion";
+import { motion as Motion } from "framer-motion";
 import { useState } from "react";
 
 const squares = 365;
@@ -74,7 +74,7 @@ export default function StreakHeatmap({ progressMap = {} }) {
   };
 
   return (
-    <motion.div
+    <Motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className="rounded-2xl border border-white/10 bg-slate-900/50 p-6 backdrop-blur"
@@ -89,27 +89,27 @@ export default function StreakHeatmap({ progressMap = {} }) {
           </div>
 
           <div className="hidden grid-cols-3 gap-4 sm:grid">
-            <motion.div
+            <Motion.div
               whileHover={{ scale: 1.05 }}
               className="rounded-lg border border-emerald-500/20 bg-emerald-900/20 px-4 py-2 text-center"
             >
               <p className="text-2xl font-bold text-emerald-300">{currentStreak}</p>
               <p className="text-xs text-emerald-300/70">Current Streak</p>
-            </motion.div>
-            <motion.div
+            </Motion.div>
+            <Motion.div
               whileHover={{ scale: 1.05 }}
               className="rounded-lg border border-orange-500/20 bg-orange-900/20 px-4 py-2 text-center"
             >
               <p className="text-2xl font-bold text-orange-300">{longestStreak}</p>
               <p className="text-xs text-orange-300/70">Longest Streak</p>
-            </motion.div>
-            <motion.div
+            </Motion.div>
+            <Motion.div
               whileHover={{ scale: 1.05 }}
               className="rounded-lg border border-violet-500/20 bg-violet-900/20 px-4 py-2 text-center"
             >
               <p className="text-2xl font-bold text-violet-300">{solvedCount}</p>
               <p className="text-xs text-violet-300/70">Days Solved</p>
-            </motion.div>
+            </Motion.div>
           </div>
         </div>
 
@@ -130,7 +130,7 @@ export default function StreakHeatmap({ progressMap = {} }) {
         </div>
       </div>
 
-      <motion.div
+      <Motion.div
         variants={containerVariants}
         initial="hidden"
         animate="show"
@@ -138,7 +138,7 @@ export default function StreakHeatmap({ progressMap = {} }) {
       >
         <div className="inline-grid gap-1" style={{ gridTemplateColumns: "repeat(53, minmax(0, 1fr))" }}>
           {days.map((day) => (
-            <motion.div
+            <Motion.div
               key={day.date}
               variants={itemVariants}
               onMouseEnter={() => setHoveredDate(day.date)}
@@ -153,7 +153,7 @@ export default function StreakHeatmap({ progressMap = {} }) {
               )}`}
             >
               {hoveredDate === day.date && day.solved && (
-                <motion.div
+                <Motion.div
                   initial={{ opacity: 0, y: 8, scale: 0.9 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 8, scale: 0.9 }}
@@ -161,12 +161,12 @@ export default function StreakHeatmap({ progressMap = {} }) {
                 >
                   {day.date}
                   <div className="absolute top-full left-1/2 -translate-x-1/2 translate-y-0 border-4 border-transparent border-t-slate-950" />
-                </motion.div>
+                </Motion.div>
               )}
-            </motion.div>
+            </Motion.div>
           ))}
         </div>
-      </motion.div>
+      </Motion.div>
 
       <div className="mt-4 flex items-center justify-between text-xs text-slate-400">
         <div className="flex items-center gap-2">
@@ -185,14 +185,14 @@ export default function StreakHeatmap({ progressMap = {} }) {
       </div>
 
       {longestStreak >= 100 && (
-        <motion.div
+        <Motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           className="mt-3 rounded-lg border border-yellow-500/30 bg-yellow-900/20 px-3 py-2 text-center text-sm text-yellow-300"
         >
           🏆 Amazing! You've reached {longestStreak} consecutive days!
-        </motion.div>
+        </Motion.div>
       )}
-    </motion.div>
+    </Motion.div>
   );
 }
