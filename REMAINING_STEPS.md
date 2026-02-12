@@ -11,6 +11,16 @@
 
 ## 📋 REMAINING STEPS
 
+## ✅ AUTOMATED IN THIS REPO (THIS UPDATE)
+- [x] Added `frontend/.env.example` with complete Firebase + API placeholders
+- [x] Added `backend/.env.example` with Neon/Postgres + CORS configuration
+- [x] Added missing docs: `ENVIRONMENT_SETUP.md`, `DEPLOYMENT.md`, `FEATURES.md`
+- [x] Updated backend CORS to use `CORS_ORIGIN` allow-list (supports comma-separated origins)
+- [x] Aligned Truecaller dev verification behavior with checklist (any 4-digit OTP in development)
+- [x] Fixed frontend lint blockers in auth/heatmap components
+
+---
+
 ### Phase 1: Local Testing & Verification (1-2 hours)
 
 #### 1.1 Functional Testing

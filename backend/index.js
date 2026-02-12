@@ -8,7 +8,19 @@ dotenv.config();
 const prisma = new PrismaClient();
 const app = express();
 
-app.use(cors());
+const allowedOrigins = (process.env.CORS_ORIGIN || "http://localhost:5173")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error("CORS origin not allowed"));
+  },
+}));
 app.use(express.json());
 
 const truecallerRate = new Map();
@@ -58,8 +70,13 @@ app.post("/auth/truecaller/dev-verify", (req, res) => {
     return res.status(429).json({ error: "Too many verification attempts. Try again shortly." });
   }
 
-  if (otp !== "123456") {
-    return res.status(401).json({ error: "Invalid otp" });
+  const isDevMode = (process.env.NODE_ENV || "development") !== "production";
+  const isDevOtp = /^\d{4}$/.test(otp);
+
+  if (!(isDevMode ? isDevOtp : otp === "123456")) {
+    return res.status(401).json({
+      error: isDevMode ? "Enter any 4-digit otp in development mode" : "Invalid otp",
+    });
   }
 
   const sanitizedPhone = phone.replace(/[^0-9+]/g, "");
