@@ -7,33 +7,17 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id          String       @id @default(uuid())
-  email       String?      @unique
-  streakCount Int          @default(0)
-  lastPlayed  DateTime?
-  totalPoints Int          @default(0)
-  stats       UserStats?
-  scores      DailyScore[]
-}
-
-model UserStats {
-  id            String @id @default(uuid())
-  userId        String @unique
-  puzzlesSolved Int    @default(0)
-  avgSolveTime  Float  @default(0)
-  user          User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
 model DailyScore {
-  id        String   @id @default(uuid())
+  id        String   @id @default(cuid())
   userId    String
-  date      DateTime
-  puzzleId  String
   score     Int
-  timeTaken Int
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime
+  createdAt DateTime @default(now())
+}
 
-  @@unique([userId, date])
-  @@index([date, score])
+model Leaderboard {
+  id        String   @id @default(cuid())
+  userId    String
+  totalScore Int
+  updatedAt DateTime @updatedAt
 }

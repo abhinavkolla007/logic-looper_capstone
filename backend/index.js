@@ -197,15 +197,89 @@ app.get("/leaderboard/daily", async (_req, res) => {
       take: 100,
       include: {
         user: {
-          select: { email: true },
+          select: { email: true, id: true, streakCount: true },
         },
       },
     });
 
-    return res.json(leaders);
+    const formatted = leaders.map((leader, idx) => ({
+      rank: idx + 1,
+      userId: leader.user.id,
+      email: leader.user.email || "Anonymous",
+      score: leader.score,
+      timeTaken: leader.timeTaken,
+      streak: leader.user.streakCount,
+    }));
+
+    return res.json(formatted);
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }
+});
+
+app.get("/users/:userId/stats", async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        stats: true,
+        scores: {
+          orderBy: { date: "desc" },
+          take: 30,
+        },
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const totalSolves = user.scores.length;
+    const avgTime = totalSolves > 0 
+      ? Math.round(user.scores.reduce((acc, s) => acc + s.timeTaken, 0) / totalSolves)
+      : 0;
+
+    return res.json({
+      id: user.id,
+      email: user.email,
+      streakCount: user.streakCount,
+      lastPlayed: user.lastPlayed,
+      totalPoints: user.totalPoints,
+      stats: {
+        puzzlesSolved: totalSolves,
+        avgSolveTime: avgTime,
+        recentScores: user.scores.slice(0, 10),
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+app.post("/users/:userId/streak", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { streak, lastPlayed, totalPoints } = req.body;
+
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        streakCount: streak,
+        lastPlayed: lastPlayed ? new Date(lastPlayed) : undefined,
+        totalPoints: totalPoints || undefined,
+      },
+    });
+
+    return res.json(user);
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+app.get("/health", (_req, res) => {
+  res.json({ status: "healthy", timestamp: new Date().toISOString() });
 });
 
 const PORT = process.env.PORT || 5000;

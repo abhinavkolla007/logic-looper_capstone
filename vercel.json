@@ -1,3 +1,31 @@
 {
-  "rewrites": [{ "source": "/api/(.*)", "destination": "/backend/index.js" }]
+  "version": 2,
+  "builds": [
+    {
+      "src": "frontend/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
+    },
+    {
+      "src": "backend/package.json",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/backend/index.js"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/frontend/$1",
+      "status": 404
+    }
+  ],
+  "env": {
+    "DATABASE_URL": "@database_url",
+    "NODE_ENV": "production"
+  }
 }
