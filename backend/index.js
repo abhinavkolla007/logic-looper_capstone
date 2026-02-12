@@ -1,0 +1,215 @@
+const express = require("express");
+const cors = require("cors");
+const dotenv = require("dotenv");
+const { PrismaClient } = require("@prisma/client");
+
+dotenv.config();
+
+const prisma = new PrismaClient();
+const app = express();
+
+app.use(cors());
+app.use(express.json());
+
+const truecallerRate = new Map();
+
+
+const ensureUser = async (userId) => {
+  await prisma.user.upsert({
+    where: { id: userId },
+    update: {},
+    create: {
+      id: userId,
+      email: userId.includes("@") ? userId : null,
+    },
+  });
+};
+
+const hitRateLimit = (key, maxPerMinute = 10) => {
+  const currentMinute = Math.floor(Date.now() / 60000);
+  const state = truecallerRate.get(key);
+
+  if (!state || state.minute !== currentMinute) {
+    truecallerRate.set(key, { minute: currentMinute, count: 1 });
+    return false;
+  }
+
+  if (state.count >= maxPerMinute) {
+    return true;
+  }
+
+  state.count += 1;
+  truecallerRate.set(key, state);
+  return false;
+};
+
+app.get("/", (_req, res) => {
+  res.json({ message: "Logic Looper backend is running 🚀" });
+});
+
+app.post("/auth/truecaller/dev-verify", (req, res) => {
+  const { phone, otp } = req.body;
+
+  if (!phone || !otp) {
+    return res.status(400).json({ error: "Phone and otp are required" });
+  }
+
+  if (hitRateLimit(phone, 6)) {
+    return res.status(429).json({ error: "Too many verification attempts. Try again shortly." });
+  }
+
+  if (otp !== "123456") {
+    return res.status(401).json({ error: "Invalid otp" });
+  }
+
+  const sanitizedPhone = phone.replace(/[^0-9+]/g, "");
+  return res.json({
+    uid: `tc-${sanitizedPhone}`,
+    name: `Truecaller ${sanitizedPhone.slice(-4)}`,
+    email: null,
+  });
+});
+
+app.post("/users", async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: "Email is required" });
+    }
+
+    const user = await prisma.user.upsert({
+      where: { email },
+      update: {},
+      create: { email },
+    });
+
+    return res.json(user);
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+app.post("/daily-scores", async (req, res) => {
+  try {
+    const { userId, puzzleId, score, timeTaken, solvedAt } = req.body;
+
+    if (!userId || !puzzleId || typeof score !== "number" || typeof timeTaken !== "number") {
+      return res.status(400).json({ error: "Missing score payload fields" });
+    }
+
+    const solvedDate = solvedAt ? new Date(solvedAt) : new Date();
+    const date = new Date(Date.UTC(solvedDate.getUTCFullYear(), solvedDate.getUTCMonth(), solvedDate.getUTCDate()));
+
+    await ensureUser(userId);
+
+    const savedScore = await prisma.dailyScore.upsert({
+      where: {
+        userId_date: {
+          userId,
+          date,
+        },
+      },
+      update: {
+        score,
+        timeTaken,
+        puzzleId,
+      },
+      create: {
+        userId,
+        puzzleId,
+        score,
+        timeTaken,
+        date,
+      },
+    });
+
+    return res.json(savedScore);
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+app.post("/daily-scores/batch", async (req, res) => {
+  try {
+    const { records } = req.body;
+
+    if (!Array.isArray(records) || !records.length) {
+      return res.status(400).json({ error: "records[] is required" });
+    }
+
+    const saved = [];
+    for (const record of records) {
+      const { userId, puzzleId, score, timeTaken, solvedAt } = record;
+      if (!userId || !puzzleId || typeof score !== "number" || typeof timeTaken !== "number") {
+        continue;
+      }
+
+      await ensureUser(userId);
+
+      const solvedDate = solvedAt ? new Date(solvedAt) : new Date();
+      const date = new Date(Date.UTC(solvedDate.getUTCFullYear(), solvedDate.getUTCMonth(), solvedDate.getUTCDate()));
+
+      const row = await prisma.dailyScore.upsert({
+        where: {
+          userId_date: {
+            userId,
+            date,
+          },
+        },
+        update: {
+          score,
+          timeTaken,
+          puzzleId,
+        },
+        create: {
+          userId,
+          puzzleId,
+          score,
+          timeTaken,
+          date,
+        },
+      });
+
+      saved.push(row.id);
+    }
+
+    return res.json({ processed: saved.length });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+app.get("/leaderboard/daily", async (_req, res) => {
+  try {
+    const now = new Date();
+    const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
+
+    const leaders = await prisma.dailyScore.findMany({
+      where: {
+        date: {
+          gte: today,
+          lt: tomorrow,
+        },
+      },
+      orderBy: [{ score: "desc" }, { timeTaken: "asc" }],
+      take: 100,
+      include: {
+        user: {
+          select: { email: true },
+        },
+      },
+    });
+
+    return res.json(leaders);
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  // eslint-disable-next-line no-console
+  console.log(`Server running on http://localhost:${PORT}`);
+});
